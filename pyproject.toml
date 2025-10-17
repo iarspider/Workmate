@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "workmate"
+version = "0.1.0"
+description = "Project uses Poetry for dependency management only (no Python package)."
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.8,<4.0"
+tabulate = "*"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+pytest-cov = "*"
+black = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

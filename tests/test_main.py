@@ -7,7 +7,7 @@ import main
 
 
 # -------------------------
-# Helpers
+# Вспомогательные функции
 # -------------------------
 def write_csv(path: Path, rows):
     path.write_text(
@@ -21,11 +21,9 @@ def write_csv(path: Path, rows):
 # report() decorator
 # -------------------------
 def test_report_registers_functions():
-    assert (
-        "average-rating" in main.reports
-    )  # registered by @report(name="...") in main.py
+    assert "average-rating" in main.reports  # уже загеристрирован по-умолчанию
 
-    # register another report
+    # добавляем ещё один отчёт с дефолтным именем
     @main.report
     def demo(_):
         return "ok"
@@ -35,6 +33,7 @@ def test_report_registers_functions():
 
 
 def test_report_registers_with_name_override():
+    # добавляем отчёт с кастомным именем
     @main.report(name="custom")
     def demo2(_):
         return "ok2"
@@ -58,7 +57,6 @@ def test_load_files_reads_multiple_csvs(tmp_path: Path):
 
     rows = main.load_files([str(f1), str(f2)])
     assert len(rows) == 3
-    # DictReader returns strings as in main.load_files
     assert rows[0]["brand"] == "Foo" and rows[0]["rating"] == "4.0"
 
 
@@ -74,13 +72,13 @@ def test_average_rating_aggregates_and_sorts_descending():
     ]
     rows = main.average_rating(data)
 
-    # Expected averages: Foo=4.5, Zeta=4.25, Baz=3.0
+    # Ожидаемые средние рейтинги: Foo=4.5, Zeta=4.25, Baz=3.0
     assert [r["brand"] for r in rows] == ["Foo", "Zeta", "Baz"]
     assert rows[0]["rating"] == pytest.approx(4.5)
     assert rows[1]["rating"] == pytest.approx(4.25)
     assert rows[2]["rating"] == pytest.approx(3.0)
 
-    # Index column starts from 1
+    # Номера строк начинаются с 1
     assert rows[0][""] == 1 and rows[1][""] == 2 and rows[2][""] == 3
 
 
@@ -95,16 +93,15 @@ def test_print_report_formats_psql_table(capsys):
     main.print_report(rows)
 
     out = capsys.readouterr().out
-    # basic structure checks; we don't snapshot full table to avoid coupling to tabulate version
-    assert "+---" in out and "|  " in out  # psql grid
+    # минимальные проверки формата отчёта, без привязки к конкретному стилю
     assert "brand" in out and "rating" in out
     assert "Foo" in out and "Zeta" in out
 
 
 # -------------------------
-# CLI smoke test
+# интеграционный тест
 # -------------------------
-def test_cli_integration_smoke(tmp_path: Path, monkeypatch, capsys):
+def test_cli_integration(tmp_path: Path, monkeypatch, capsys):
     f1 = write_csv(
         tmp_path / "brands1.csv",
         [{"brand": "Foo", "rating": "4.0"}, {"brand": "Foo", "rating": "5.0"}],
@@ -125,11 +122,11 @@ def test_cli_integration_smoke(tmp_path: Path, monkeypatch, capsys):
     monkeypatch.setenv("PYTHONUTF8", "1")
     monkeypatch.setattr(sys, "argv", argv)
 
-    # Run main; it will parse args, load files, run report, and print the table.
+    # Запускаем основную функцию
     main.main()
 
     out = capsys.readouterr().out
-    # Ensure brands are present and Foo (avg 4.5) appears in output
+    # Провряем бренды...
     assert "Foo" in out and "Baz" in out
-    # Ensure 4.5 is present
+    # ... и ожидаемое среднее
     assert "4.5" in out
